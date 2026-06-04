@@ -1,0 +1,56 @@
+<svg width="1200" height="640" viewBox="0 0 1200 640" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Love Room app preview</title>
+  <desc id="desc">A warm self-hosted dashboard preview with two cities, countdown, daily question, wishlist, movie room, drawing board, and stamp book cards.</desc>
+  <rect width="1200" height="640" rx="34" fill="#F9F4EC"/>
+  <rect x="32" y="32" width="1136" height="576" rx="28" fill="#FFFCF7" stroke="#D8CBBB" stroke-width="2"/>
+  <circle cx="1074" cy="122" r="72" fill="#F6D7C9" opacity=".55"/>
+  <circle cx="140" cy="520" r="96" fill="#D9E7DE" opacity=".5"/>
+  <text x="82" y="116" fill="#3B3028" font-family="Georgia, 'Times New Roman', serif" font-size="58" font-weight="700">Love Room</text>
+  <text x="86" y="154" fill="#7C6B5E" font-family="Arial, sans-serif" font-size="22">A private two-person room for distance, routines, and little rituals.</text>
+
+  <g transform="translate(82 208)">
+    <rect width="330" height="172" rx="18" fill="#FFF7EF" stroke="#E4D5C4"/>
+    <text x="24" y="42" fill="#9A5C48" font-family="Arial, sans-serif" font-size="13" font-weight="700">CITY A</text>
+    <text x="24" y="86" fill="#3B3028" font-family="Georgia, serif" font-size="38" font-weight="700">21:36</text>
+    <text x="24" y="122" fill="#7C6B5E" font-family="Arial, sans-serif" font-size="18">Cloudy · 22°C</text>
+    <text x="250" y="90" font-size="54">☁️</text>
+  </g>
+
+  <g transform="translate(442 208)">
+    <rect width="330" height="172" rx="18" fill="#F5FAF6" stroke="#D8E5D8"/>
+    <text x="24" y="42" fill="#5A7A65" font-family="Arial, sans-serif" font-size="13" font-weight="700">CITY B</text>
+    <text x="24" y="86" fill="#3B3028" font-family="Georgia, serif" font-size="38" font-weight="700">14:36</text>
+    <text x="24" y="122" fill="#7C6B5E" font-family="Arial, sans-serif" font-size="18">Sunny · 18°C</text>
+    <text x="250" y="90" font-size="54">☀️</text>
+  </g>
+
+  <g transform="translate(802 184)">
+    <rect width="286" height="220" rx="22" fill="#3B3028"/>
+    <text x="28" y="54" fill="#F7D8C9" font-family="Arial, sans-serif" font-size="13" font-weight="700">NEXT MEETING</text>
+    <text x="28" y="104" fill="#FFF8EF" font-family="Georgia, serif" font-size="44" font-weight="700">42 days</text>
+    <text x="30" y="144" fill="#D8CBBB" font-family="Arial, sans-serif" font-size="18">06 hours · 18 min</text>
+    <rect x="28" y="166" width="230" height="12" rx="6" fill="#5D5046"/>
+    <rect x="28" y="166" width="142" height="12" rx="6" fill="#F0A48A"/>
+  </g>
+
+  <g transform="translate(82 422)">
+    <rect width="232" height="116" rx="18" fill="#FFFFFF" stroke="#E4D5C4"/>
+    <text x="22" y="38" fill="#3B3028" font-family="Arial, sans-serif" font-size="20" font-weight="700">Daily Question</text>
+    <text x="22" y="72" fill="#7C6B5E" font-family="Arial, sans-serif" font-size="15">Answer privately, unlock together.</text>
+  </g>
+  <g transform="translate(338 422)">
+    <rect width="232" height="116" rx="18" fill="#FFFFFF" stroke="#E4D5C4"/>
+    <text x="22" y="38" fill="#3B3028" font-family="Arial, sans-serif" font-size="20" font-weight="700">Wishlist</text>
+    <text x="22" y="72" fill="#7C6B5E" font-family="Arial, sans-serif" font-size="15">Shared todos in realtime.</text>
+  </g>
+  <g transform="translate(594 422)">
+    <rect width="232" height="116" rx="18" fill="#FFFFFF" stroke="#E4D5C4"/>
+    <text x="22" y="38" fill="#3B3028" font-family="Arial, sans-serif" font-size="20" font-weight="700">Movie Room</text>
+    <text x="22" y="72" fill="#7C6B5E" font-family="Arial, sans-serif" font-size="15">Synced playback and chat.</text>
+  </g>
+  <g transform="translate(850 422)">
+    <rect width="232" height="116" rx="18" fill="#FFFFFF" stroke="#E4D5C4"/>
+    <text x="22" y="38" fill="#3B3028" font-family="Arial, sans-serif" font-size="20" font-weight="700">Canvas</text>
+    <text x="22" y="72" fill="#7C6B5E" font-family="Arial, sans-serif" font-size="15">Draw, save, and revisit.</text>
+  </g>
+</svg>

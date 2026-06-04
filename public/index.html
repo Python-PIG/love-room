@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Love Room</title>
+    <link rel="stylesheet" href="/styles.css?v=20260530-refresh-lock">
+    <script src="/socket.io/socket.io.js" defer></script>
+    <script src="/app.js?v=20260530-refresh-lock" defer></script>
+  </head>
+  <body class="locked">
+    <section class="gate" id="gate" aria-label="进入房间">
+      <div class="gate-card" id="gate-card">
+        <p class="eyebrow">Private Room</p>
+        <h2 id="gate-title">选择你的入口</h2>
+        <aside class="setup-hint" id="setup-hint" hidden>
+          <strong>First run setup</strong>
+          <span>Configure the two people, cities, and passcodes here. Keep server-only values like <code>ROOM_SECRET</code> in <code>.env</code>.</span>
+        </aside>
+        <form class="setup-form" id="setup-form" hidden>
+          <div class="setup-columns">
+            <fieldset>
+              <legend>Person A</legend>
+              <label>
+                Display name
+                <input id="setup-person-a-name" autocomplete="name" required>
+              </label>
+              <label>
+                Emoji
+                <input id="setup-person-a-emoji" maxlength="8" required>
+              </label>
+              <label>
+                Passcode
+                <input id="setup-person-a-passcode" type="password" minlength="4" autocomplete="new-password" required>
+              </label>
+              <label>
+                City
+                <input id="setup-city-a-name" required>
+              </label>
+              <label>
+                Time zone
+                <input id="setup-city-a-timezone" list="timezone-suggestions" required>
+              </label>
+              <label>
+                Birthday
+                <input id="setup-city-a-birthday" inputmode="numeric" placeholder="MM-DD">
+              </label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Person B</legend>
+              <label>
+                Display name
+                <input id="setup-person-b-name" autocomplete="name" required>
+              </label>
+              <label>
+                Emoji
+                <input id="setup-person-b-emoji" maxlength="8" required>
+              </label>
+              <label>
+                Passcode
+                <input id="setup-person-b-passcode" type="password" minlength="4" autocomplete="new-password" required>
+              </label>
+              <label>
+                City
+                <input id="setup-city-b-name" required>
+              </label>
+              <label>
+                Time zone
+                <input id="setup-city-b-timezone" list="timezone-suggestions" required>
+              </label>
+              <label>
+                Birthday
+                <input id="setup-city-b-birthday" inputmode="numeric" placeholder="MM-DD">
+              </label>
+            </fieldset>
+          </div>
+          <div class="setup-extra">
+            <label>
+              Next meeting
+              <input id="setup-next-meeting-at" type="datetime-local">
+            </label>
+            <label>
+              Meeting place
+              <input id="setup-next-meeting-location">
+            </label>
+            <label>
+              Countdown title
+              <input id="setup-next-meeting-title">
+            </label>
+          </div>
+          <p class="setup-note">Weather coordinates are resolved automatically from the city name. You can fine tune advanced coordinates later in Settings.</p>
+          <button class="primary" type="submit">Create room</button>
+          <p class="gate-error" id="setup-error" role="alert"></p>
+        </form>
+        <datalist id="timezone-suggestions">
+          <option value="Asia/Shanghai"></option>
+          <option value="Europe/Rome"></option>
+          <option value="Europe/London"></option>
+          <option value="Europe/Paris"></option>
+          <option value="America/New_York"></option>
+          <option value="America/Los_Angeles"></option>
+          <option value="UTC"></option>
+        </datalist>
+        <div class="gate-orbits" id="gate-orbits">
+          <button class="gate-person" data-gate-person="A" type="button" aria-label="Person A 入口">
+            <span class="gate-emoji">💛</span>
+            <span class="gate-label">Person A</span>
+          </button>
+          <button class="gate-person" data-gate-person="B" type="button" aria-label="Person B 入口">
+            <span class="gate-emoji">🌙</span>
+            <span class="gate-label">Person B</span>
+          </button>
+        </div>
+        <form class="gate-form" id="gate-form" hidden>
+          <button class="gate-back" id="gate-back" type="button">返回</button>
+          <div class="gate-picked" id="gate-picked">💛 Person A</div>
+          <label>
+            小房间密码
+            <input id="gate-passcode" type="password" inputmode="numeric" autocomplete="current-password" placeholder="输入密码">
+          </label>
+          <button class="primary" type="submit">进入</button>
+          <p class="gate-error" id="gate-error" role="alert"></p>
+        </form>
+      </div>
+    </section>
+
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <p class="eyebrow" id="room-subtitle">City A ↔ City B</p>
+          <h1>Love Room</h1>
+        </div>
+        <div class="identity" aria-label="选择身份">
+          <span>我是</span>
+          <button class="chip" data-person="A" type="button">City A</button>
+          <button class="chip" data-person="B" type="button">City B</button>
+        </div>
+      </header>
+
+      <nav class="tabs" aria-label="主导航">
+        <button class="tab is-active" data-route="dashboard" type="button">
+          <span class="tab-icon">⌂</span>
+          <span class="tab-label">首页</span>
+        </button>
+        <button class="tab" data-route="todos" type="button">
+          <span class="tab-icon">♡</span>
+          <span class="tab-label">心愿</span>
+        </button>
+        <button class="tab" data-route="countdown" type="button">
+          <span class="tab-icon">⏳</span>
+          <span class="tab-label">倒计时</span>
+        </button>
+        <button class="tab" data-route="daily" type="button">
+          <span class="tab-icon">✦</span>
+          <span class="tab-label">今天</span>
+        </button>
+        <button class="tab" data-route="movie" type="button">
+          <span class="tab-icon">▶</span>
+          <span class="tab-label">电影</span>
+        </button>
+        <button class="tab" data-route="drawing" type="button">
+          <span class="tab-icon">✎</span>
+          <span class="tab-label">画板</span>
+        </button>
+        <button class="tab" data-route="games" type="button">
+          <span class="tab-icon">♢</span>
+          <span class="tab-label">更多</span>
+        </button>
+        <button class="tab" data-route="settings" type="button">
+          <span class="tab-icon">⚙</span>
+          <span class="tab-label">设置</span>
+        </button>
+      </nav>
+
+      <main>
+        <section class="page is-active" id="page-dashboard">
+          <article class="panel app-hero">
+            <div>
+              <p class="eyebrow">Private Room</p>
+              <h2 id="hero-title">💛 Person A 和 🌙 Person B</h2>
+              <p class="muted" id="hero-line">两座城市，一个小房间。</p>
+            </div>
+            <div class="hero-note">
+              <span class="note-kicker">Next</span>
+              <strong id="hero-days">-- 天</strong>
+              <span>直到下一次见面</span>
+            </div>
+          </article>
+
+          <div class="dashboard-grid">
+            <article class="panel clock-panel city-card-a">
+              <div class="panel-title">
+                <span id="city-a-name">City A</span>
+                <span class="pill" id="city-a-zone">UTC</span>
+              </div>
+              <div class="clock-time" id="city-a-time">--:--:--</div>
+              <div class="muted" id="city-a-date">----</div>
+              <div class="weather-line" id="city-a-weather">天气加载中</div>
+            </article>
+
+            <article class="panel clock-panel city-card-b">
+              <div class="panel-title">
+                <span id="city-b-name">City B</span>
+                <span class="pill" id="city-b-zone">UTC</span>
+              </div>
+              <div class="clock-time" id="city-b-time">--:--:--</div>
+              <div class="muted" id="city-b-date">----</div>
+              <div class="weather-line" id="city-b-weather">天气加载中</div>
+            </article>
+          </div>
+
+          <article class="panel countdown-panel">
+            <div>
+              <p class="eyebrow">下次见面</p>
+              <h2 id="dashboard-meeting-title">Next Meeting</h2>
+              <p class="muted" id="dashboard-meeting-meta">----</p>
+            </div>
+            <div class="countdown-row compact" id="dashboard-countdown"></div>
+          </article>
+
+          <div class="home-insights">
+            <article class="panel insight-card">
+              <p class="eyebrow">今天的你</p>
+              <h3 id="dashboard-daily-question">问题加载中</h3>
+              <p class="muted" id="dashboard-daily-meta">还没有答案状态</p>
+              <div class="mini-answers" id="dashboard-daily-answers"></div>
+            </article>
+            <article class="panel insight-card">
+              <p class="eyebrow">心愿清单</p>
+              <h3 id="dashboard-todo-summary">0 个心愿</h3>
+              <p class="muted" id="dashboard-todo-meta">一起想做的事会在这里慢慢长出来。</p>
+            </article>
+            <article class="panel insight-card">
+              <p class="eyebrow">共同画板</p>
+              <h3 id="dashboard-drawing-summary">0 张作品</h3>
+              <p class="muted" id="dashboard-drawing-meta">保存的画板会留在服务器里。</p>
+            </article>
+          </div>
+
+          <section class="care-grid">
+            <article class="panel care-card" data-person-care="A">
+              <div class="care-card-head">
+                <div>
+                  <p class="eyebrow">今日穿搭</p>
+                  <h3 id="outfit-a-title">Person A 穿什么</h3>
+                </div>
+                <span class="tag" id="outfit-a-weather">天气同步中</span>
+              </div>
+              <p class="care-advice" id="outfit-a-advice">等天气加载后给你建议。</p>
+              <div class="weather-metrics" id="outfit-a-metrics"></div>
+              <div class="outfit-picker" id="outfit-a-picker" data-person="A"></div>
+            </article>
+
+            <article class="panel care-card" data-person-care="B">
+              <div class="care-card-head">
+                <div>
+                  <p class="eyebrow">今日穿搭</p>
+                  <h3 id="outfit-b-title">Person B 穿什么</h3>
+                </div>
+                <span class="tag" id="outfit-b-weather">天气同步中</span>
+              </div>
+              <p class="care-advice" id="outfit-b-advice">等天气加载后给她建议。</p>
+              <div class="weather-metrics" id="outfit-b-metrics"></div>
+              <div class="outfit-picker" id="outfit-b-picker" data-person="B"></div>
+            </article>
+          </section>
+
+          <section class="care-grid single-care-grid">
+            <article class="panel care-card">
+              <div class="care-card-head">
+                <div>
+                  <p class="eyebrow">异地小日历</p>
+                  <h3>生日和重要日子</h3>
+                </div>
+              </div>
+              <div class="calendar-list" id="small-calendar"></div>
+            </article>
+          </section>
+        </section>
+
+        <section class="page" id="page-todos">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Wish List</p>
+              <h2>我们想一起做的事</h2>
+            </div>
+          </div>
+
+          <form class="panel form-grid" id="todo-form">
+            <input type="hidden" id="todo-id">
+            <label>
+              标题
+              <input id="todo-title" maxlength="120" required placeholder="比如：一起在海边散步">
+            </label>
+            <label>
+              类型
+              <select id="todo-type">
+                <option>想一起做的事</option>
+                <option>想去的地方</option>
+                <option>想吃的东西</option>
+                <option>想看的电影</option>
+                <option>其他</option>
+              </select>
+            </label>
+            <label class="wide">
+              备注
+              <textarea id="todo-note" rows="3" maxlength="800" placeholder="可选"></textarea>
+            </label>
+            <div class="form-actions wide">
+              <button class="primary" type="submit" id="todo-submit">添加</button>
+              <button class="ghost" type="button" id="todo-cancel" hidden>取消编辑</button>
+            </div>
+          </form>
+
+          <div class="list" id="todo-list"></div>
+        </section>
+
+        <section class="page countdown-page" id="page-countdown">
+          <article class="panel center-panel countdown-main-panel">
+            <p class="eyebrow">Countdown</p>
+            <h2 id="countdown-title">Next Meeting</h2>
+            <p class="muted" id="countdown-meta">----</p>
+            <div class="countdown-row large" id="countdown-main"></div>
+          </article>
+
+          <section class="panel anniversary-panel">
+            <div class="anniversary-head">
+              <div>
+                <p class="eyebrow">Anniversaries</p>
+                <h2>纪念日倒计时</h2>
+                <p class="muted" id="anniversary-hint">生日、恋爱天数和自定义纪念日会在这里安静排队。</p>
+              </div>
+              <a class="ghost anniversary-settings-link" href="#settings">设置恋爱开始日期</a>
+            </div>
+
+            <div class="anniversary-strip" id="anniversary-selector" aria-label="纪念日选择器"></div>
+
+            <article class="anniversary-detail" id="anniversary-detail">
+              <p class="muted">纪念日加载中。</p>
+            </article>
+
+            <details class="anniversary-editor">
+              <summary>新增自定义纪念日</summary>
+              <form class="anniversary-form" id="anniversary-form">
+                <label>
+                  标题
+                  <input id="anniversary-title" maxlength="80" placeholder="比如：第一次一起看海">
+                </label>
+                <label>
+                  日期
+                  <input id="anniversary-date" type="date">
+                </label>
+                <label>
+                  图标
+                  <input id="anniversary-icon" maxlength="12" placeholder="♡">
+                </label>
+                <button class="primary" type="submit">保存纪念日</button>
+              </form>
+            </details>
+          </section>
+        </section>
+
+        <section class="page" id="page-daily">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow" id="daily-date">今天</p>
+              <h2>今天的你</h2>
+            </div>
+            <div class="answer-status" id="daily-status"></div>
+          </div>
+
+          <article class="panel daily-panel">
+            <h3 id="daily-question">问题加载中</h3>
+            <form id="daily-form">
+              <textarea id="daily-answer" rows="4" maxlength="1000" required placeholder="写下今天的答案"></textarea>
+              <button class="primary" type="submit">提交答案</button>
+            </form>
+            <div class="answers-grid" id="daily-answers"></div>
+          </article>
+
+          <details class="panel">
+            <summary>历史回答</summary>
+            <div class="history-list" id="daily-history"></div>
+          </details>
+
+          <details class="panel">
+            <summary>问题库</summary>
+            <form class="question-form" id="question-form">
+              <textarea id="question-text" rows="5" maxlength="1200" placeholder="一次写 5 个问题，每行一个"></textarea>
+              <div class="form-actions">
+                <button class="ghost" type="button" id="question-generate">生成五题</button>
+                <button class="primary" type="submit">添加问题</button>
+              </div>
+            </form>
+            <div class="question-list" id="question-list"></div>
+          </details>
+        </section>
+
+        <section class="page" id="page-movie">
+          <div class="movie-layout">
+            <section class="movie-main">
+              <div class="panel video-panel">
+                <div class="video-shell">
+                  <video id="movie-video" controls playsinline></video>
+                </div>
+                <div class="movie-meta">
+                  <strong id="movie-title">还没有选择影片</strong>
+                  <span id="movie-presence">City A 0 · City B 0</span>
+                </div>
+                <div class="movie-status-row">
+                  <span class="movie-status" id="movie-status">等待选择影片</span>
+                  <button class="ghost" type="button" id="movie-sync">同步进度</button>
+                </div>
+                <label class="rate-control">
+                  倍速
+                  <select id="movie-rate">
+                    <option value="0.5">0.5x</option>
+                    <option value="0.75">0.75x</option>
+                    <option value="1" selected>1x</option>
+                    <option value="1.25">1.25x</option>
+                    <option value="1.5">1.5x</option>
+                    <option value="2">2x</option>
+                  </select>
+                </label>
+              </div>
+
+              <form class="panel inline-form" id="movie-url-form">
+                <input id="movie-url" type="url" placeholder="https://example.com/video.mp4">
+                <button class="primary" type="submit">使用链接</button>
+              </form>
+
+              <form class="panel inline-form" id="movie-upload-form">
+                <input id="movie-file" type="file" accept="video/mp4,video/webm,video/ogg,.m4v,.mov,.m3u8">
+                <button class="ghost" type="submit">上传视频</button>
+                <span class="form-hint" id="movie-upload-status"></span>
+              </form>
+            </section>
+
+            <aside class="panel chat-panel">
+              <h3>聊天</h3>
+              <div class="chat-list" id="movie-chat"></div>
+              <form class="chat-form" id="movie-chat-form">
+                <input id="movie-message" maxlength="500" placeholder="边看边聊">
+                <button class="primary" type="submit">发送</button>
+              </form>
+            </aside>
+          </div>
+        </section>
+
+        <section class="page" id="page-drawing">
+          <div class="drawing-layout">
+            <section class="panel drawing-panel">
+              <div class="drawing-toolbar">
+                <label>
+                  颜色
+                  <input type="color" id="brush-color" value="#c65f48">
+                </label>
+                <label>
+                  粗细
+                  <input type="range" id="brush-size" min="1" max="36" value="5">
+                </label>
+                <label class="check-label">
+                  <input type="checkbox" id="eraser-mode">
+                  橡皮擦
+                </label>
+                <button class="ghost" type="button" id="undo-drawing">撤销</button>
+                <button class="ghost danger" type="button" id="clear-drawing">清空</button>
+              </div>
+              <div class="drawing-presence" id="drawing-presence" aria-live="polite">
+                <span class="presence-dot"></span>
+                <span id="drawing-presence-text">画板在线同步中</span>
+              </div>
+              <canvas id="drawing-canvas" aria-label="共同画板"></canvas>
+              <form class="inline-form save-form" id="save-drawing-form">
+                <input id="drawing-title" maxlength="120" placeholder="作品标题">
+                <button class="primary" type="submit">保存图片</button>
+              </form>
+            </section>
+
+            <aside class="panel gallery-panel">
+              <h3>保存的画板</h3>
+              <div class="gallery" id="drawing-gallery"></div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="page" id="page-games">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">More</p>
+              <h2>更多</h2>
+            </div>
+          </div>
+
+          <div class="game-directory">
+            <article class="panel game-card stampbook-card">
+              <div class="game-card-icon">✉</div>
+              <div>
+                <p class="eyebrow">Stamp Album</p>
+                <h3>盖印册</h3>
+                <p class="muted">每天一枚小邮戳，把这一年慢慢盖满。</p>
+              </div>
+              <button class="primary" type="button" id="stampbook-open">打开</button>
+            </article>
+
+            <article class="panel game-card">
+              <div class="game-card-icon">✎</div>
+              <div>
+                <p class="eyebrow">Private Game</p>
+                <h3>你画我猜</h3>
+                <p class="muted">两个人轮流画画，另一个人猜词。</p>
+              </div>
+              <button class="primary" type="button" id="drawguess-open">进入</button>
+            </article>
+
+            <article class="panel game-card">
+              <div class="game-card-icon">♟</div>
+              <div>
+                <p class="eyebrow">Board Game</p>
+                <h3>VirtualTabletop</h3>
+                <p class="muted">打开私人桌游桌面，一起摆牌、下棋、玩自定义桌游。</p>
+              </div>
+              <a class="primary game-link is-disabled" data-game-link="vtt" target="_blank" rel="noreferrer" aria-disabled="true">未配置</a>
+            </article>
+
+            <article class="panel game-card">
+              <div class="game-card-icon">⌖</div>
+              <div>
+                <p class="eyebrow">Map Game</p>
+                <h3>Posio</h3>
+                <p class="muted">打开地理小游戏，比一比谁更快猜到城市和旗帜。</p>
+              </div>
+              <a class="primary game-link is-disabled" data-game-link="posio" target="_blank" rel="noreferrer" aria-disabled="true">未配置</a>
+            </article>
+          </div>
+
+          <div class="stampbook-room" id="stampbook-room">
+            <section class="panel stampbook-panel">
+              <div class="stampbook-cover">
+                <div>
+                  <p class="eyebrow">Postmark Collection</p>
+                  <h2>盖印册</h2>
+                  <p class="muted" id="stampbook-status">正在整理今天的邮戳。</p>
+                </div>
+                <div class="stampbook-filters">
+                  <label class="stamp-year-picker">
+                    年度
+                    <select id="stampbook-year"></select>
+                  </label>
+                  <label class="stamp-month-picker">
+                    月份
+                    <select id="stampbook-month"></select>
+                  </label>
+                </div>
+              </div>
+
+              <div class="stampbook-stats">
+                <div class="stamp-stat">
+                  <span>连续</span>
+                  <strong id="stampbook-streak">0 天</strong>
+                </div>
+                <div class="stamp-stat">
+                  <span>本月</span>
+                  <strong id="stampbook-progress-text">0 / 0</strong>
+                </div>
+                <div class="stamp-stat">
+                  <span>徽章</span>
+                  <strong id="stampbook-badge">普通章</strong>
+                </div>
+              </div>
+
+              <div class="stamp-progress" aria-label="年度进度">
+                <span id="stampbook-progress-fill"></span>
+              </div>
+
+              <div class="stampbook-grid-head">
+                <strong id="stampbook-grid-title">月度册</strong>
+                <span class="muted" id="stampbook-grid-meta">0 / 0</span>
+              </div>
+              <div class="stamp-calendar">
+                <div class="stamp-calendar-weekdays">
+                  <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+                </div>
+                <div class="stamp-calendar-grid" id="stampbook-grid"></div>
+              </div>
+
+              <article class="stampbook-detail" id="stampbook-detail">
+                <p class="muted">选中一个日期，看看这一格的故事。</p>
+              </article>
+            </section>
+          </div>
+
+          <div class="drawguess-room" id="drawguess-room">
+            <div class="game-layout">
+              <section class="panel game-panel">
+                <div class="game-header">
+                  <div>
+                    <p class="eyebrow">你画我猜</p>
+                    <h2 id="drawguess-title">等待开局</h2>
+                    <p class="muted" id="drawguess-status">准备好就开一局。</p>
+                  </div>
+                  <div class="game-actions">
+                    <button class="primary" type="button" id="drawguess-new-round">开一局</button>
+                    <button class="ghost" type="button" id="drawguess-pass-turn">换人画</button>
+                  </div>
+                </div>
+
+                <div class="game-word-strip" id="drawguess-word-box">
+                  <span class="presence-dot"></span>
+                  <span id="drawguess-word">还没有词语</span>
+                </div>
+
+                <div class="drawing-toolbar game-toolbar">
+                  <label>
+                    颜色
+                    <input type="color" id="drawguess-color" value="#526f93">
+                  </label>
+                  <label>
+                    粗细
+                    <input type="range" id="drawguess-size" min="2" max="34" value="6">
+                  </label>
+                  <button class="ghost" type="button" id="drawguess-undo">撤销</button>
+                  <button class="ghost danger" type="button" id="drawguess-clear">清空</button>
+                </div>
+
+                <canvas id="drawguess-canvas" aria-label="你画我猜画布"></canvas>
+              </section>
+
+              <aside class="panel game-side-panel">
+                <h3>猜词记录</h3>
+                <div class="guess-list" id="drawguess-guesses"></div>
+                <form class="chat-form" id="drawguess-guess-form">
+                  <input id="drawguess-guess" maxlength="80" placeholder="输入你的答案">
+                  <button class="primary" type="submit">猜</button>
+                </form>
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" id="page-settings">
+          <form class="panel settings-form" id="settings-form">
+            <div class="settings-grid">
+              <label>
+                城市 A 名称
+                <input id="setting-city-a-name" required>
+              </label>
+              <label>
+                城市 A 时区
+                <input id="setting-city-a-timezone" required>
+              </label>
+              <label>
+                Person A 冷热偏好
+                <select id="setting-city-a-cold-preference">
+                  <option value="cold">怕冷，多加一层</option>
+                  <option value="normal">正常</option>
+                  <option value="hot">怕热，少一点厚度</option>
+                </select>
+              </label>
+              <label>
+                Person A 生日
+                <input id="setting-city-a-birthday" type="text" inputmode="numeric" placeholder="MM-DD">
+              </label>
+              <label>
+                城市 B 名称
+                <input id="setting-city-b-name" required>
+              </label>
+              <label>
+                城市 B 时区
+                <input id="setting-city-b-timezone" required>
+              </label>
+              <label>
+                Person B 冷热偏好
+                <select id="setting-city-b-cold-preference">
+                  <option value="cold">怕冷，多加一层</option>
+                  <option value="normal">正常</option>
+                  <option value="hot">怕热，少一点厚度</option>
+                </select>
+              </label>
+              <label>
+                Person B 生日
+                <input id="setting-city-b-birthday" type="text" inputmode="numeric" placeholder="MM-DD">
+              </label>
+              <details class="advanced-settings wide">
+                <summary>Advanced weather coordinates</summary>
+                <p>Usually leave these blank. Weather resolves coordinates from city names automatically.</p>
+                <div class="advanced-coordinate-grid">
+                  <label>
+                    City A latitude
+                    <input id="setting-city-a-latitude" inputmode="decimal" placeholder="auto">
+                  </label>
+                  <label>
+                    City A longitude
+                    <input id="setting-city-a-longitude" inputmode="decimal" placeholder="auto">
+                  </label>
+                  <label>
+                    City B latitude
+                    <input id="setting-city-b-latitude" inputmode="decimal" placeholder="auto">
+                  </label>
+                  <label>
+                    City B longitude
+                    <input id="setting-city-b-longitude" inputmode="decimal" placeholder="auto">
+                  </label>
+                </div>
+              </details>
+              <label>
+                恋爱开始日期
+                <input id="setting-relationship-start-date" type="date">
+              </label>
+              <label>
+                下次见面时间
+                <input id="setting-next-meeting-at" type="datetime-local" required>
+              </label>
+              <label>
+                下次见面地点
+                <input id="setting-next-meeting-location" required>
+              </label>
+              <label class="wide">
+                倒计时标题
+                <input id="setting-next-meeting-title" required>
+              </label>
+            </div>
+            <button class="primary" type="submit">保存设置</button>
+          </form>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

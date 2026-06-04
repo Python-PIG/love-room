@@ -1,0 +1,30 @@
+{
+  "name": "long-distance-love-room",
+  "version": "1.0.0",
+  "description": "A private two-person long-distance room web app.",
+  "license": "MIT",
+  "keywords": [
+    "express",
+    "socket.io",
+    "sqlite",
+    "long-distance",
+    "couple",
+    "self-hosted"
+  ],
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "init-db": "node scripts/init-db.js"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {
+    "better-sqlite3": "8.7.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "multer": "^2.0.2",
+    "socket.io": "^4.8.1"
+  }
+}

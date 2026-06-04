@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+.ssh_askpass*
+
+# Runtime data
+data/*
+!data/.gitkeep
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+
+# User uploads
+uploads/videos/*
+uploads/drawings/*
+!uploads/videos/.gitkeep
+!uploads/drawings/.gitkeep
+
+# Backups, local deploy artifacts, and private snapshots
+snapshots/
+backups/
+*.tgz
+*.tar
+*.zip
+*.7z
+.love-room-*
+.verify-*
+.harden-*
+
+# Private deployment files
+.*nginx*.conf
+.nas-*.conf
+.zzyymy-*.conf
+.apply-*.sh
+
+# Local audit/planning notes
+docs/superpowers/
+docs/sensitive-audit-*.md
