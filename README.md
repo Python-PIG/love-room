@@ -1,38 +1,55 @@
+<p align="center">
+  <a href="./README.md"><strong>简体中文</strong></a>
+  ·
+  <a href="./README.zh-Hant.md">繁體中文</a>
+  ·
+  <a href="./README.en.md">English</a>
+</p>
+
 # Love Room
 
-![Love Room preview](docs/assets/readme-hero.svg)
+一个温暖、干净、可自托管的双人私密 Web App。适合异地情侣、亲密朋友，或者任何只想和一个人共享日常小空间的人。
 
-Love Room is a warm, self-hosted two-person web app for long-distance couples or close friends. It is private-path and passcode based: no registration system, no SaaS backend, no third-party database.
+![Love Room 预览](docs/assets/readme-hero.svg)
 
-## Features
+## 它是什么
 
-- Dual-city dashboard with clocks, dates, weather, outfit hints, and meeting countdown
-- Shared wishlist / todo list with realtime Socket.io sync
-- Daily question: each person answers privately, both answers unlock together
-- Countdown page for the next meeting, birthdays, and anniversaries
-- Synced movie room with playback sync, local uploads, external video URLs, chat, and presence
-- Shared canvas with realtime drawing, undo, eraser, save, and gallery
-- Stamp book for daily visits and streak badges
-- Private draw-and-guess game built with Canvas and Socket.io
-- Browser first-run setup for names, emojis, passcodes, cities, time zones, birthdays, and meeting info
+Love Room 不是社交平台，也不是账号系统。它只有一个私密访问路径和两个房间口令。你把它部署在自己的服务器上，数据保存在自己的 SQLite 和本地上传目录里。
 
-## Stack
+第一次打开网页时，会出现初始化表单。用户可以在网页端填写：
+
+- 两个人的显示名、emoji 和口令
+- 两个城市、时区、生日
+- 下次见面时间、地点、倒计时标题
+
+经纬度不用手填。天气会根据城市名自动解析坐标；如果自动解析不准，再去设置页的高级项手动覆盖。
+
+## 功能一览
+
+![功能地图](docs/assets/feature-map.svg)
+
+- 双城 Dashboard：时间、日期、天气、体感温度、风速、UV、穿搭建议
+- 下次见面倒计时：主倒计时、生日、纪念日、自定义纪念日
+- 共享心愿单：实时同步新增、编辑、完成、删除
+- 今天的你：双方回答前互不可见，双方提交后解锁
+- 电影同步房间：视频链接、本地上传、播放/暂停/进度/倍速同步、聊天
+- 共同画板：实时画画、橡皮擦、撤销、清空、保存图片
+- 盖印册：每日邮戳、连续天数、月度查看、历史记录
+- 你画我猜：私人实时小游戏
+- 更多入口：可配置 VirtualTabletop / Posio 外部游戏链接
+
+## 技术栈
 
 - Node.js + Express
 - Socket.io
 - SQLite
-- Plain HTML/CSS/JavaScript
-- Local filesystem uploads
-- Open-Meteo by default; optional OpenWeatherMap API key
+- 原生 HTML / CSS / JavaScript
+- Open-Meteo 默认天气源，可选 OpenWeatherMap
+- 本地文件上传，适合自托管
 
-## Prerequisites
+## 快速开始
 
-- Node.js 20 LTS recommended
-- npm
-- Linux/macOS/Windows supported for local use
-- For some platforms, `better-sqlite3` may need native build tools if a prebuilt binary is unavailable
-
-## Quick Start
+推荐 Node.js 20 LTS。
 
 macOS / Linux:
 
@@ -52,62 +69,86 @@ npm.cmd run init-db
 npm.cmd start
 ```
 
-Open:
+打开：
 
 ```text
 http://localhost:3000/love-room-demo
 ```
 
-On first open, the app shows a setup form. Fill in the two people, passcodes, cities, time zones, optional birthdays, and next meeting details. Weather coordinates are resolved automatically from city names, so most users do not need latitude or longitude.
+然后在网页里完成首次配置。
 
-## What Still Belongs In `.env`
+## 一键部署支持
 
-Most personal room details are configured in the browser. Keep server-level values in `.env`.
+支持 Docker Compose。严格来说，公开部署前仍需要先改一次 `.env` 里的服务器级秘密，例如 `ROOM_SECRET` 和 `ROOM_PATH`；之后可以一条命令启动。
 
-| Variable | Required | Default | Notes |
-| --- | --- | --- | --- |
-| `NODE_ENV` | No | `development` | Use `production` on servers. |
-| `PORT` | No | `3000` | App listen port. |
-| `HOST` | No | `127.0.0.1` | Use `0.0.0.0` only if you want direct network access. |
-| `BASE_URL` | No | `http://localhost:3000` | Public site URL for docs/integrations. |
-| `ROOM_PATH` | Recommended | `/love-room-demo` | Change before public deployment. |
-| `DB_PATH` | No | `data/app.sqlite` | SQLite file path. |
-| `WEATHER_PROVIDER` | No | `openmeteo` | `openmeteo` or `openweathermap`. |
-| `WEATHER_API_KEY` | If OpenWeatherMap | empty | Not needed for Open-Meteo. |
-| `MAX_VIDEO_MB` | No | `500` | Upload size limit. |
-| `ROOM_SECRET` | Yes in production | dev placeholder | Generate a long random string. |
-| `VTT_URL` | No | empty | Optional external VirtualTabletop link. |
-| `POSIO_URL` | No | empty | Optional external Posio link. |
-| `TRUST_PROXY` | Behind proxy | `0` | Set `1` behind Nginx. |
+![部署流程](docs/assets/deploy-flow.svg)
 
-Optional seed variables such as `PERSON_A_NAME` and `CITY_A_NAME` exist for scripted deployments, but most users should leave them out and use the browser setup.
-
-## Architecture
-
-```mermaid
-flowchart LR
-  B["Browser"] -->|"HTTP + Socket.io"| E["Express app"]
-  E --> S["SQLite: data/app.sqlite"]
-  E --> U["Uploads: videos + drawings"]
-  E --> W["Weather API"]
-  N["Nginx / HTTPS"] --> E
+```bash
+git clone https://github.com/Python-PIG/love-room.git
+cd love-room
+cp .env.example .env
+# 编辑 .env：至少修改 ROOM_SECRET，部署公网时也建议修改 ROOM_PATH
+docker compose up -d --build
 ```
 
-## Deployment Sketch
+查看日志：
+
+```bash
+docker compose logs -f
+```
+
+停止：
+
+```bash
+docker compose down
+```
+
+Docker Compose 会使用 volume 保存：
+
+- SQLite 数据库：`/app/data`
+- 上传文件：`/app/uploads`
+
+所以重建容器不会丢数据。
+
+## `.env` 还需要做什么
+
+大多数个性化信息已经移到网页端。`.env` 只保留服务器级配置。
+
+| 变量 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `NODE_ENV` | 否 | `development` | 生产环境用 `production` |
+| `PORT` | 否 | `3000` | Node 服务端口 |
+| `HOST` | 否 | `127.0.0.1` | Nginx 反代推荐保持默认；直连局域网可改 `0.0.0.0` |
+| `BASE_URL` | 否 | `http://localhost:3000` | 你的公开访问地址 |
+| `ROOM_PATH` | 建议 | `/love-room-demo` | 私密路径，公开部署前建议修改 |
+| `DB_PATH` | 否 | `data/app.sqlite` | SQLite 文件位置 |
+| `WEATHER_PROVIDER` | 否 | `openmeteo` | 可选 `openmeteo` 或 `openweathermap` |
+| `WEATHER_API_KEY` | 视情况 | 空 | OpenWeatherMap 才需要 |
+| `MAX_VIDEO_MB` | 否 | `500` | 视频上传大小限制 |
+| `ROOM_SECRET` | 生产必填 | 示例值 | 生产环境必须换成长随机字符串 |
+| `VTT_URL` | 否 | 空 | 更多页里的 VirtualTabletop 链接 |
+| `POSIO_URL` | 否 | 空 | 更多页里的 Posio 链接 |
+| `TRUST_PROXY` | 反代时 | `0` | Nginx / 反代后建议设为 `1` |
+
+生成 `ROOM_SECRET`：
+
+```bash
+openssl rand -hex 32
+```
+
+## 传统 Node 部署
 
 ```bash
 sudo mkdir -p /opt/love-room
 sudo chown "$USER":"$USER" /opt/love-room
-git clone https://github.com/your-name/love-room.git /opt/love-room
+git clone https://github.com/Python-PIG/love-room.git /opt/love-room
 cd /opt/love-room
 npm ci --omit=dev
 cp .env.example .env
-# Edit .env: NODE_ENV=production, ROOM_PATH, ROOM_SECRET, BASE_URL, TRUST_PROXY=1
+# 编辑 .env：NODE_ENV=production、ROOM_SECRET、ROOM_PATH、BASE_URL
 npm run init-db
 npm start
 ```
-
-Then open the private room path and complete the browser setup.
 
 ## PM2
 
@@ -120,7 +161,7 @@ pm2 startup
 
 ## systemd
 
-Create `/etc/systemd/system/love-room.service`:
+创建 `/etc/systemd/system/love-room.service`：
 
 ```ini
 [Unit]
@@ -141,7 +182,7 @@ Group=love-room
 WantedBy=multi-user.target
 ```
 
-Then:
+启动：
 
 ```bash
 sudo systemctl daemon-reload
@@ -149,7 +190,7 @@ sudo systemctl enable --now love-room
 sudo systemctl status love-room
 ```
 
-## Nginx Reverse Proxy
+## Nginx 反向代理
 
 ```nginx
 server {
@@ -169,55 +210,61 @@ server {
 }
 ```
 
-For HTTPS, add Certbot or your preferred certificate manager.
+如果用 Nginx，请在 `.env` 中设置：
 
-## Backup
+```env
+TRUST_PROXY=1
+```
 
-Back up:
+HTTPS 可以用 Certbot 或你喜欢的证书方案。
+
+## 备份
+
+需要备份：
 
 - `data/app.sqlite`
 - `uploads/drawings`
-- optionally `uploads/videos` if you want to preserve uploaded movies
+- 如果你想保留上传影片，也备份 `uploads/videos`
 
-Example:
+示例：
 
 ```bash
 APP_DIR=/opt/love-room BACKUP_ROOT=/opt/love-room-backups bash scripts/backup.sh
 ```
 
-## Troubleshooting
+## 常见问题
 
-- `Set ROOM_SECRET before running in production.`  
-  Set a real `ROOM_SECRET` in `.env`, for example `openssl rand -hex 32`.
+**生产启动时报 `Set ROOM_SECRET before running in production.`**
+说明你还没有设置真实 `ROOM_SECRET`，或者仍在使用示例值。
 
-- Socket.io does not connect behind Nginx  
-  Check `Upgrade` and `Connection` headers and set `TRUST_PROXY=1`.
+**天气城市不准怎么办？**
+先把城市名写具体一点，例如加国家或地区。如果仍不准，到设置页展开 `Advanced weather coordinates` 手动填经纬度。
 
-- Weather shows the wrong place  
-  Make the city name more specific, or use Settings -> Advanced weather coordinates.
+**改了 `.env` 里的城市，网页没变？**
+首次配置会写入 SQLite。之后请在网页设置页修改；或者删除数据库重新初始化。
 
-- `.env` city changes do not update the app  
-  First-run settings are stored in SQLite. Change them in the browser Settings page or reset the database.
+**Socket.io 在 Nginx 后面连不上？**
+检查 `Upgrade` / `Connection` 请求头，并设置 `TRUST_PROXY=1`。
 
-- Windows PowerShell refuses `npm`  
-  Use `npm.cmd` commands as shown in Quick Start.
+**Windows 执行 `npm` 被 PowerShell 拦截？**
+使用 README 里的 `npm.cmd` 命令。
 
-## Security Notes
+## 安全边界
 
-- Do not commit `.env`, SQLite databases, private keys, uploads, backups, or real Nginx configs.
-- Change `ROOM_PATH` before exposing the app to the internet.
-- Complete browser setup before sharing the URL. While setup is incomplete, anyone with the room path can claim the initial configuration.
-- Uploaded files under `/uploads` are served statically by the app. Do not upload content you would not want accessible to someone who has the URL.
-- This project is private-path/passcode based. It is not a full account system.
+- 不要提交 `.env`、SQLite 数据库、上传文件、备份、私钥、真实 Nginx 配置。
+- 公网部署前请修改 `ROOM_PATH`。
+- 首次 setup 完成前，只要知道房间路径的人都可能初始化房间；请先完成 setup 再分享地址。
+- `/uploads` 下文件会被静态访问，不要上传真正敏感的内容。
+- 这是私密路径 + 口令方案，不是完整账号系统。
 
-## Public Repo Checklist
+## 开源发布检查
 
 ```bash
 git add -n .
 rg --glob '!node_modules/**' --glob '!data/**' --glob '!uploads/**' "your-real-domain|your-real-ip|real-passcode|real-room-path"
 ```
 
-Only commit source code, docs, `.env.example`, `.gitignore`, lockfile, license, and `.gitkeep` placeholders.
+只提交源码、文档、`.env.example`、`.gitignore`、lockfile、License 和 `.gitkeep`。
 
 ## License
 

@@ -1,0 +1,50 @@
+<svg width="1200" height="520" viewBox="0 0 1200 520" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Love Room feature map</title>
+  <desc id="desc">Feature cards for clocks, weather, countdowns, wishlist, daily questions, movie room, drawing board, stamp book, and draw-and-guess.</desc>
+  <rect width="1200" height="520" rx="30" fill="#FFFCF7"/>
+  <rect x="28" y="28" width="1144" height="464" rx="26" fill="#F8F1E8" stroke="#E2D3C1"/>
+  <text x="72" y="92" fill="#3B3028" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-weight="700">Everything for a private two-person room</text>
+  <text x="74" y="128" fill="#7B6A5E" font-family="Arial, sans-serif" font-size="18">Realtime rituals, small planning, and shared presence in one self-hosted app.</text>
+  <g font-family="Arial, sans-serif">
+    <g transform="translate(72 168)">
+      <rect width="230" height="118" rx="18" fill="#FFFFFF" stroke="#E5D7C6"/>
+      <text x="22" y="42" font-size="25">Clock + Weather</text>
+      <text x="22" y="76" font-size="15" fill="#7B6A5E">Two cities, outfit hints, UV, wind.</text>
+    </g>
+    <g transform="translate(332 168)">
+      <rect width="230" height="118" rx="18" fill="#FFFFFF" stroke="#E5D7C6"/>
+      <text x="22" y="42" font-size="25">Countdowns</text>
+      <text x="22" y="76" font-size="15" fill="#7B6A5E">Meetings, birthdays, anniversaries.</text>
+    </g>
+    <g transform="translate(592 168)">
+      <rect width="230" height="118" rx="18" fill="#FFFFFF" stroke="#E5D7C6"/>
+      <text x="22" y="42" font-size="25">Wishlist</text>
+      <text x="22" y="76" font-size="15" fill="#7B6A5E">Realtime shared todos and wishes.</text>
+    </g>
+    <g transform="translate(852 168)">
+      <rect width="230" height="118" rx="18" fill="#FFFFFF" stroke="#E5D7C6"/>
+      <text x="22" y="42" font-size="25">Daily Question</text>
+      <text x="22" y="76" font-size="15" fill="#7B6A5E">Private answers unlock together.</text>
+    </g>
+    <g transform="translate(72 326)">
+      <rect width="230" height="118" rx="18" fill="#FFFFFF" stroke="#E5D7C6"/>
+      <text x="22" y="42" font-size="25">Movie Room</text>
+      <text x="22" y="76" font-size="15" fill="#7B6A5E">Synced play, seek, speed, chat.</text>
+    </g>
+    <g transform="translate(332 326)">
+      <rect width="230" height="118" rx="18" fill="#FFFFFF" stroke="#E5D7C6"/>
+      <text x="22" y="42" font-size="25">Canvas</text>
+      <text x="22" y="76" font-size="15" fill="#7B6A5E">Draw together, save images.</text>
+    </g>
+    <g transform="translate(592 326)">
+      <rect width="230" height="118" rx="18" fill="#FFFFFF" stroke="#E5D7C6"/>
+      <text x="22" y="42" font-size="25">Stamp Book</text>
+      <text x="22" y="76" font-size="15" fill="#7B6A5E">Daily visits and streak badges.</text>
+    </g>
+    <g transform="translate(852 326)">
+      <rect width="230" height="118" rx="18" fill="#FFFFFF" stroke="#E5D7C6"/>
+      <text x="22" y="42" font-size="25">Draw + Guess</text>
+      <text x="22" y="76" font-size="15" fill="#7B6A5E">Private realtime mini game.</text>
+    </g>
+  </g>
+</svg>

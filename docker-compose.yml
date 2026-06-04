@@ -1,0 +1,21 @@
+services:
+  love-room:
+    build: .
+    container_name: love-room
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      DB_PATH: data/app.sqlite
+    ports:
+      - "${LOVE_ROOM_PORT:-3000}:3000"
+    volumes:
+      - love_room_data:/app/data
+      - love_room_uploads:/app/uploads
+
+volumes:
+  love_room_data:
+  love_room_uploads:
