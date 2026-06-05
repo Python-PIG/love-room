@@ -1,7 +1,7 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => Array.from(document.querySelectorAll(selector));
-  const roomPath = window.location.pathname.replace(/\/+$/, "") || "/love-room-wenzhou-venice";
+  const roomPath = window.location.pathname.replace(/\/+$/, "") || "/love-room-demo";
 
   const state = {
     person: "A",
@@ -436,7 +436,15 @@
   function setRoute(route) {
     const safeRoute = route || "dashboard";
     $$(".page").forEach((page) => page.classList.toggle("is-active", page.id === `page-${safeRoute}`));
-    $$(".tab").forEach((tab) => tab.classList.toggle("is-active", tab.dataset.route === safeRoute));
+    $$(".tab").forEach((tab) => {
+      const isActive = tab.dataset.route === safeRoute;
+      tab.classList.toggle("is-active", isActive);
+      if (isActive) {
+        tab.setAttribute("aria-current", "page");
+      } else {
+        tab.removeAttribute("aria-current");
+      }
+    });
     if (window.location.hash.slice(1) !== safeRoute) {
       history.replaceState(null, "", `#${safeRoute}`);
     }

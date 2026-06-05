@@ -12,6 +12,10 @@
 
 ![Love Room 預覽](docs/assets/readme-hero.svg)
 
+<p align="center">
+  <strong>私密路徑</strong> · <strong>雙入口口令</strong> · <strong>本機 SQLite</strong> · <strong>Docker 就緒</strong>
+</p>
+
 ## 它是什麼
 
 Love Room 不是社交平台，也不是帳號系統。它只有一個私密訪問路徑和兩個房間口令。你把它部署在自己的伺服器上，資料保存在自己的 SQLite 和本機上傳目錄裡。
@@ -49,7 +53,7 @@ Love Room 不是社交平台，也不是帳號系統。它只有一個私密訪�
 
 ## 快速開始
 
-推薦 Node.js 20 LTS。
+推薦 Node.js 20、22 或 24 LTS；目前不建議使用 Node 25。
 
 macOS / Linux:
 
@@ -129,6 +133,7 @@ Docker Compose 會使用 volume 保存：
 | `VTT_URL` | 否 | 空 | 更多頁裡的 VirtualTabletop 連結 |
 | `POSIO_URL` | 否 | 空 | 更多頁裡的 Posio 連結 |
 | `TRUST_PROXY` | 反代時 | `0` | Nginx / 反代後建議設為 `1` |
+| `COOKIE_SECURE` | HTTPS 時 | 自動 | 生產環境預設啟用 Secure cookie；只有純本機 HTTP 才建議設為 `0` |
 
 生成 `ROOM_SECRET`：
 
@@ -157,6 +162,37 @@ npm install -g pm2
 pm2 start ecosystem.config.cjs
 pm2 save
 pm2 startup
+```
+
+## systemd
+
+建立 `/etc/systemd/system/love-room.service`：
+
+```ini
+[Unit]
+Description=Love Room
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/love-room
+EnvironmentFile=/opt/love-room/.env
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=3
+User=love-room
+Group=love-room
+
+[Install]
+WantedBy=multi-user.target
+```
+
+啟動：
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now love-room
+sudo systemctl status love-room
 ```
 
 ## Nginx 反向代理
@@ -201,6 +237,8 @@ HTTPS 可以用 Certbot 或你喜歡的憑證方案。
 APP_DIR=/opt/love-room BACKUP_ROOT=/opt/love-room-backups bash scripts/backup.sh
 ```
 
+備份腳本也會複製 `.env`，所以備份目錄需要保持私密。如果系統安裝了 `sqlite3`，腳本會使用 SQLite 線上備份；否則會同時複製 `app.sqlite` 以及可能存在的 WAL/SHM 檔案，並把它們保存在同一個快照裡。
+
 ## 常見問題
 
 **生產啟動時出現 `Set ROOM_SECRET before running in production.`**
@@ -212,13 +250,30 @@ APP_DIR=/opt/love-room BACKUP_ROOT=/opt/love-room-backups bash scripts/backup.sh
 **改了 `.env` 裡的城市，網頁沒變？**
 首次配置會寫入 SQLite。之後請在網頁設定頁修改；或者刪除資料庫重新初始化。
 
+**Socket.io 在 Nginx 後面連不上？**
+檢查 `Upgrade` / `Connection` 請求頭，並設定 `TRUST_PROXY=1`。
+
+**Windows 執行 `npm` 被 PowerShell 攔截？**
+使用 README 裡的 `npm.cmd` 命令。
+
 ## 安全邊界
 
 - 不要提交 `.env`、SQLite 資料庫、上傳檔案、備份、私鑰、真實 Nginx 配置。
 - 公網部署前請修改 `ROOM_PATH`。
 - 首次 setup 完成前，只要知道房間路徑的人都可能初始化房間；請先完成 setup 再分享地址。
-- `/uploads` 下檔案會被靜態訪問，不要上傳真正敏感的內容。
+- 口令在 setup 或舊資料遷移後會以 scrypt 雜湊保存。
+- 瀏覽器工作階段使用簽名的 HTTP-only cookie，同時為 WebSocket 鑑權保留同一個短期 access token。
+- `/uploads` 下檔案會被靜態訪問。上傳會校驗 MIME 和副檔名，但這裡不是敏感檔案儲存。
 - 這是私密路徑 + 口令方案，不是完整帳號系統。
+
+## 開源發布檢查
+
+```bash
+git add -n .
+rg --glob '!node_modules/**' --glob '!data/**' --glob '!uploads/**' "your-real-domain|your-real-ip|real-passcode|real-room-path"
+```
+
+只提交源碼、文件、`.env.example`、`.gitignore`、lockfile、License 和 `.gitkeep`。
 
 ## License
 

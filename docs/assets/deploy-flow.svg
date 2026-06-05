@@ -1,6 +1,6 @@
-<svg width="1200" height="420" viewBox="0 0 1200 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
-  <title id="title">Love Room deployment flow</title>
-  <desc id="desc">Deployment flow from git clone to env file, Docker Compose or Node.js, then browser setup and persistent SQLite and uploads.</desc>
+<svg width="1200" height="420" viewBox="0 0 1200 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="deployFlowTitle deployFlowDesc">
+  <title id="deployFlowTitle">Love Room deployment flow</title>
+  <desc id="deployFlowDesc">Deployment flow from git clone to env file, Docker Compose or Node.js, then browser setup and persistent SQLite and uploads.</desc>
   <rect width="1200" height="420" rx="30" fill="#F7FAF7"/>
   <rect x="32" y="32" width="1136" height="356" rx="26" fill="#FFFFFF" stroke="#D5E2D5"/>
   <text x="74" y="92" fill="#2F3D34" font-family="Georgia, 'Times New Roman', serif" font-size="40" font-weight="700">One-command deploy path</text>

@@ -6,6 +6,12 @@ const path = require("node:path");
 const express = require("express");
 const multer = require("multer");
 const { Server } = require("socket.io");
+const { hashPasscode, verifyPasscode } = require("./passcodes");
+const {
+  VIDEO_UPLOAD_ERROR,
+  isAllowedVideoUpload,
+  safeUploadName
+} = require("./uploads");
 const {
   db,
   config,
@@ -29,6 +35,25 @@ const DRAWINGS_DIR = path.join(UPLOADS_DIR, "drawings");
 const app = express();
 if (config.trustProxy) app.set("trust proxy", 1);
 
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader("Content-Security-Policy", [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self'",
+    "img-src 'self' data: https:",
+    "media-src 'self' http: https: blob:",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "frame-ancestors 'self'"
+  ].join("; "));
+  next();
+});
+
 app.use(express.json({ limit: "30mb" }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -50,7 +75,13 @@ function parseCookies(cookieHeader = "") {
     if (index === -1) return acc;
     const key = chunk.slice(0, index).trim();
     const value = chunk.slice(index + 1).trim();
-    if (key) acc[key] = decodeURIComponent(value);
+    if (key) {
+      try {
+        acc[key] = decodeURIComponent(value);
+      } catch (_error) {
+        acc[key] = value;
+      }
+    }
     return acc;
   }, {});
 }
@@ -86,7 +117,8 @@ function getAccessFromRequest(req) {
   const bearerToken = authorization.toLowerCase().startsWith("bearer ")
     ? authorization.slice(7).trim()
     : "";
-  return verifyAccessToken(headerToken || bearerToken);
+  const cookieToken = parseCookies(req.get("cookie") || "").love_room_access || "";
+  return verifyAccessToken(headerToken || bearerToken || cookieToken);
 }
 
 function setAccessCookie(res, person) {
@@ -94,16 +126,17 @@ function setAccessCookie(res, person) {
   res.cookie("love_room_access", token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: false,
+    secure: config.cookieSecure,
     maxAge: 1000 * 60 * 60 * 24 * 30,
     path: "/"
   });
+  return token;
 }
 
 function clearAccessCookie(res) {
   res.clearCookie("love_room_access", {
     sameSite: "lax",
-    secure: false,
+    secure: config.cookieSecure,
     path: "/"
   });
 }
@@ -738,12 +771,6 @@ function emitAnniversaries() {
   io.to(ROOM).emit("anniversaries:updated", buildAnniversaryPayload());
 }
 
-function safeUploadName(originalName) {
-  const ext = path.extname(originalName || "").toLowerCase();
-  return `${Date.now()}-${crypto.randomBytes(8).toString("hex")}${ext}`;
-}
-
-const allowedVideoExts = new Set([".mp4", ".webm", ".ogg", ".ogv", ".m4v", ".mov", ".m3u8"]);
 const uploadVideo = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, VIDEOS_DIR),
@@ -753,11 +780,10 @@ const uploadVideo = multer({
     fileSize: config.maxVideoMb * 1024 * 1024
   },
   fileFilter: (_req, file, cb) => {
-    const ext = path.extname(file.originalname || "").toLowerCase();
-    if (allowedVideoExts.has(ext) || (file.mimetype || "").startsWith("video/")) {
+    if (isAllowedVideoUpload(file)) {
       return cb(null, true);
     }
-    return cb(new Error("Only mp4, webm, ogg, m4v, mov, or m3u8 video files are allowed."));
+    return cb(new Error(VIDEO_UPLOAD_ERROR));
   }
 });
 
@@ -991,7 +1017,10 @@ async function fetchOpenMeteoWeather(place, lat, lon, fallbackWeatherCode = null
 
 app.use("/uploads", express.static(UPLOADS_DIR, {
   maxAge: "1d",
-  fallthrough: false
+  fallthrough: false,
+  setHeaders: (res) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+  }
 }));
 app.use(express.static(PUBLIC_DIR, {
   extensions: ["html"],
@@ -1050,10 +1079,10 @@ app.post("/api/setup", requireRoomPath, (req, res) => {
   updateRoomConfig({
     personAName,
     personAEmoji,
-    personAPasscode,
+    personAPasscode: hashPasscode(personAPasscode),
     personBName,
     personBEmoji,
-    personBPasscode,
+    personBPasscode: hashPasscode(personBPasscode),
     setupComplete: "1"
   });
   const settings = updateSettings({
@@ -1075,10 +1104,11 @@ app.post("/api/setup", requireRoomPath, (req, res) => {
 
   io.to(ROOM).emit("settings:updated", settings);
   emitAnniversaries();
+  const accessToken = setAccessCookie(res, "A");
   res.json({
     ok: true,
     person: "A",
-    accessToken: makeAccessToken("A"),
+    accessToken,
     publicConfig: buildPublicConfigPayload(),
     settings
   });
@@ -1101,13 +1131,14 @@ app.post("/api/unlock", requireRoomPath, (req, res) => {
   }
   const room = getRoomConfig();
   const expected = person === "B" ? room.personBPasscode : room.personAPasscode;
-  if (passcode !== expected) {
+  if (!verifyPasscode(passcode, expected)) {
     registerUnlockFailure(attemptKey);
     return res.status(401).json({ error: "密码不对。" });
   }
   unlockAttempts.delete(attemptKey);
   clearAccessCookie(res);
-  res.json({ ok: true, person, accessToken: makeAccessToken(person) });
+  const accessToken = setAccessCookie(res, person);
+  res.json({ ok: true, person, accessToken });
 });
 
 app.post("/api/lock", requireRoomPath, (_req, res) => {
@@ -1503,7 +1534,8 @@ io.use((socket, next) => {
   if (roomPath !== config.roomPath && roomPath !== config.roomPath.slice(1)) {
     return next(new Error("Invalid room."));
   }
-  const token = socket.handshake.auth?.accessToken || "";
+  const cookieToken = parseCookies(socket.handshake.headers?.cookie || "").love_room_access || "";
+  const token = socket.handshake.auth?.accessToken || cookieToken;
   const access = verifyAccessToken(token);
   if (!access) {
     return next(new Error("Room is locked."));

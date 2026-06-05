@@ -139,7 +139,7 @@
       </header>
 
       <nav class="tabs" aria-label="主导航">
-        <button class="tab is-active" data-route="dashboard" type="button">
+        <button class="tab is-active" data-route="dashboard" type="button" aria-current="page">
           <span class="tab-icon">⌂</span>
           <span class="tab-label">首页</span>
         </button>
@@ -426,12 +426,12 @@
               </div>
 
               <form class="panel inline-form" id="movie-url-form">
-                <input id="movie-url" type="url" placeholder="https://example.com/video.mp4">
+                <input id="movie-url" type="url" aria-label="视频链接" placeholder="https://example.com/video.mp4">
                 <button class="primary" type="submit">使用链接</button>
               </form>
 
               <form class="panel inline-form" id="movie-upload-form">
-                <input id="movie-file" type="file" accept="video/mp4,video/webm,video/ogg,.m4v,.mov,.m3u8">
+                <input id="movie-file" type="file" aria-label="上传本地视频" accept="video/mp4,video/webm,video/ogg,.m4v,.mov,.m3u8">
                 <button class="ghost" type="submit">上传视频</button>
                 <span class="form-hint" id="movie-upload-status"></span>
               </form>
@@ -441,7 +441,7 @@
               <h3>聊天</h3>
               <div class="chat-list" id="movie-chat"></div>
               <form class="chat-form" id="movie-chat-form">
-                <input id="movie-message" maxlength="500" placeholder="边看边聊">
+                <input id="movie-message" maxlength="500" aria-label="电影聊天室消息" placeholder="边看边聊">
                 <button class="primary" type="submit">发送</button>
               </form>
             </aside>
@@ -473,7 +473,7 @@
               </div>
               <canvas id="drawing-canvas" aria-label="共同画板"></canvas>
               <form class="inline-form save-form" id="save-drawing-form">
-                <input id="drawing-title" maxlength="120" placeholder="作品标题">
+                <input id="drawing-title" maxlength="120" aria-label="作品标题" placeholder="作品标题">
                 <button class="primary" type="submit">保存图片</button>
               </form>
             </section>
@@ -631,7 +631,7 @@
                 <h3>猜词记录</h3>
                 <div class="guess-list" id="drawguess-guesses"></div>
                 <form class="chat-form" id="drawguess-guess-form">
-                  <input id="drawguess-guess" maxlength="80" placeholder="输入你的答案">
+                  <input id="drawguess-guess" maxlength="80" aria-label="你画我猜答案" placeholder="输入你的答案">
                   <button class="primary" type="submit">猜</button>
                 </form>
               </aside>

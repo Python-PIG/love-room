@@ -1,6 +1,6 @@
-<svg width="1200" height="640" viewBox="0 0 1200 640" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
-  <title id="title">Love Room app preview</title>
-  <desc id="desc">A warm self-hosted dashboard preview with two cities, countdown, daily question, wishlist, movie room, drawing board, and stamp book cards.</desc>
+<svg width="1200" height="640" viewBox="0 0 1200 640" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="readmeHeroTitle readmeHeroDesc">
+  <title id="readmeHeroTitle">Love Room app preview</title>
+  <desc id="readmeHeroDesc">A warm self-hosted dashboard preview with two cities, countdown, daily question, wishlist, movie room, drawing board, and stamp book cards.</desc>
   <rect width="1200" height="640" rx="34" fill="#F9F4EC"/>
   <rect x="32" y="32" width="1136" height="576" rx="28" fill="#FFFCF7" stroke="#D8CBBB" stroke-width="2"/>
   <circle cx="1074" cy="122" r="72" fill="#F6D7C9" opacity=".55"/>
