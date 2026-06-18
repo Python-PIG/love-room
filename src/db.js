@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { config } = require("./config");
+const { hashPasscode, isHashedPasscode } = require("./passcodes");
 
 function createDatabase(filePath) {
   try {
@@ -50,10 +51,10 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_ROOM_CONFIG = {
   personAName: config.personAName,
   personAEmoji: config.personAEmoji,
-  personAPasscode: config.pigPasscode,
+  personAPasscode: seedPasscode(config.pigPasscode, "change-me-a"),
   personBName: config.personBName,
   personBEmoji: config.personBEmoji,
-  personBPasscode: config.catPasscode,
+  personBPasscode: seedPasscode(config.catPasscode, "change-me-b"),
   setupComplete: config.setupComplete ? "1" : "0"
 };
 
@@ -196,6 +197,7 @@ function migrate() {
   for (const [key, value] of Object.entries(DEFAULT_ROOM_CONFIG)) {
     insertRoomConfig.run(key, value, now);
   }
+  migrateLegacyPasscodes(now);
 
   const insertQuestion = db.prepare(`
     INSERT OR IGNORE INTO daily_questions (text, active, created_at)
@@ -210,6 +212,29 @@ function migrate() {
       (id, video_url, video_name, video_type, position, paused, playback_rate, updated_at)
     VALUES ('main', NULL, NULL, NULL, 0, 1, 1, ?)
   `).run(now);
+}
+
+function seedPasscode(value, placeholder) {
+  const passcode = String(value || placeholder);
+  return passcode === placeholder ? placeholder : hashPasscode(passcode);
+}
+
+function isSetupPlaceholder(key, value) {
+  return (key === "personAPasscode" && value === "change-me-a")
+    || (key === "personBPasscode" && value === "change-me-b");
+}
+
+function migrateLegacyPasscodes(updatedAt) {
+  const stmt = db.prepare("UPDATE room_config SET value = ?, updated_at = ? WHERE key = ?");
+  const rows = db.prepare(`
+    SELECT key, value FROM room_config
+    WHERE key IN ('personAPasscode', 'personBPasscode')
+  `).all();
+  for (const row of rows) {
+    if (!isSetupPlaceholder(row.key, row.value) && !isHashedPasscode(row.value)) {
+      stmt.run(hashPasscode(row.value), updatedAt, row.key);
+    }
+  }
 }
 
 function getSettings() {

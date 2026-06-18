@@ -1,6 +1,6 @@
-<svg width="1200" height="520" viewBox="0 0 1200 520" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
-  <title id="title">Love Room feature map</title>
-  <desc id="desc">Feature cards for clocks, weather, countdowns, wishlist, daily questions, movie room, drawing board, stamp book, and draw-and-guess.</desc>
+<svg width="1200" height="520" viewBox="0 0 1200 520" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="featureMapTitle featureMapDesc">
+  <title id="featureMapTitle">Love Room feature map</title>
+  <desc id="featureMapDesc">Feature cards for clocks, weather, countdowns, wishlist, daily questions, movie room, drawing board, stamp book, and draw-and-guess.</desc>
   <rect width="1200" height="520" rx="30" fill="#FFFCF7"/>
   <rect x="28" y="28" width="1144" height="464" rx="26" fill="#F8F1E8" stroke="#E2D3C1"/>
   <text x="72" y="92" fill="#3B3028" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-weight="700">Everything for a private two-person room</text>

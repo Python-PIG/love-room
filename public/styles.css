@@ -4,11 +4,12 @@
   --paper-soft: #fbf6ef;
   --ink: #24211d;
   --muted: #6f6a61;
+  --ink-soft: #514a42;
   --line: #dfd8cd;
   --line-strong: #cfc4b4;
-  --accent: #c65f48;
-  --accent-dark: #9f4432;
-  --sage: #657f6a;
+  --accent: #a84b38;
+  --accent-dark: #823628;
+  --sage: #4f6f55;
   --sage-soft: #eef4ed;
   --blue: #526f93;
   --rose: #b65b72;
@@ -780,6 +781,16 @@ select:focus,
 textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(198, 95, 72, 0.14);
+}
+
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(82, 111, 147, 0.38);
+  outline-offset: 3px;
 }
 
 .wide {
@@ -2319,5 +2330,16 @@ video {
 
   .anniversary-card {
     flex-basis: 86vw;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
   }
 }

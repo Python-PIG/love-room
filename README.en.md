@@ -12,6 +12,10 @@ A warm, clean, self-hosted private web app for two people. It works well for lon
 
 ![Love Room preview](docs/assets/readme-hero.svg)
 
+<p align="center">
+  <strong>Private path</strong> · <strong>Two passcodes</strong> · <strong>Local SQLite</strong> · <strong>Docker ready</strong>
+</p>
+
 ## What It Is
 
 Love Room is not a social network and does not include a registration system. It uses one private room path and two passcodes. You deploy it on your own server, and the data stays in your own SQLite database and local upload folders.
@@ -34,7 +38,7 @@ Latitude and longitude are not required for most users. Weather coordinates are 
 - Daily question: private answers unlock after both people submit
 - Synced movie room with URLs, local uploads, playback sync, chat, and presence
 - Shared canvas with realtime drawing, eraser, undo, clear, save, and gallery
-- Stamp book for daily visits and streak badges
+- Stamp book for daily visits, streak badges, monthly views, and history
 - Private draw-and-guess game
 - Optional VirtualTabletop and Posio links on the More page
 
@@ -49,7 +53,7 @@ Latitude and longitude are not required for most users. Weather coordinates are 
 
 ## Quick Start
 
-Node.js 20 LTS is recommended.
+Node.js 20, 22, or 24 LTS is recommended. Node 25 is not currently supported.
 
 macOS / Linux:
 
@@ -108,6 +112,8 @@ Compose stores persistent data in Docker volumes:
 - SQLite database: `/app/data`
 - uploads: `/app/uploads`
 
+Rebuilding the container does not delete those volumes.
+
 ## What Still Belongs In `.env`
 
 Most personal room details live in the browser setup. `.env` is for server-level values.
@@ -127,6 +133,7 @@ Most personal room details live in the browser setup. `.env` is for server-level
 | `VTT_URL` | No | empty | Optional VirtualTabletop link. |
 | `POSIO_URL` | No | empty | Optional Posio link. |
 | `TRUST_PROXY` | Behind proxy | `0` | Set to `1` behind Nginx. |
+| `COOKIE_SECURE` | HTTPS deployments | auto | Production defaults to Secure cookies; set `0` only for plain local HTTP. |
 
 Generate a secret:
 
@@ -155,6 +162,37 @@ npm install -g pm2
 pm2 start ecosystem.config.cjs
 pm2 save
 pm2 startup
+```
+
+## systemd
+
+Create `/etc/systemd/system/love-room.service`:
+
+```ini
+[Unit]
+Description=Love Room
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/love-room
+EnvironmentFile=/opt/love-room/.env
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=3
+User=love-room
+Group=love-room
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Start it:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now love-room
+sudo systemctl status love-room
 ```
 
 ## Nginx
@@ -191,6 +229,8 @@ Back up:
 APP_DIR=/opt/love-room BACKUP_ROOT=/opt/love-room-backups bash scripts/backup.sh
 ```
 
+The backup script also copies `.env`, so keep the backup directory private. If `sqlite3` is installed, it uses SQLite's online backup command; otherwise it copies `app.sqlite` together with any WAL/SHM files and keeps them in the same snapshot.
+
 ## Troubleshooting
 
 - `Set ROOM_SECRET before running in production.`
@@ -210,8 +250,19 @@ APP_DIR=/opt/love-room BACKUP_ROOT=/opt/love-room-backups bash scripts/backup.sh
 - Never commit `.env`, SQLite databases, uploads, backups, private keys, or real Nginx configs.
 - Change `ROOM_PATH` before public deployment.
 - Complete setup before sharing the URL. Before setup is complete, anyone with the room path can claim the initial configuration.
-- Files under `/uploads` are statically served. Do not upload truly sensitive content.
+- Passcodes are stored as scrypt hashes after setup or legacy migration.
+- Browser sessions use a signed HTTP-only cookie, with the same short-lived access token available for WebSocket auth.
+- Files under `/uploads` are statically served. Uploads are MIME/extension checked, but they are not sensitive storage.
 - This is a private-path/passcode app, not a full account system.
+
+## Open Source Release Check
+
+```bash
+git add -n .
+rg --glob '!node_modules/**' --glob '!data/**' --glob '!uploads/**' "your-real-domain|your-real-ip|real-passcode|real-room-path"
+```
+
+Commit only source, docs, `.env.example`, `.gitignore`, lockfile, License, and `.gitkeep`.
 
 ## License
 

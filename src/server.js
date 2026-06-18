@@ -3,9 +3,16 @@ const fs = require("node:fs");
 const https = require("node:https");
 const http = require("node:http");
 const path = require("node:path");
+const { execFile } = require("node:child_process");
 const express = require("express");
 const multer = require("multer");
 const { Server } = require("socket.io");
+const { hashPasscode, verifyPasscode } = require("./passcodes");
+const {
+  VIDEO_UPLOAD_ERROR,
+  isAllowedVideoUpload,
+  safeUploadName
+} = require("./uploads");
 const {
   db,
   config,
@@ -25,9 +32,33 @@ const PUBLIC_DIR = path.join(config.rootDir, "public");
 const UPLOADS_DIR = path.join(config.rootDir, "uploads");
 const VIDEOS_DIR = path.join(UPLOADS_DIR, "videos");
 const DRAWINGS_DIR = path.join(UPLOADS_DIR, "drawings");
+const SERVERCHAN_PUSH_BIN = process.env.SERVERCHAN_PUSH_BIN || "/usr/local/bin/serverchan-push";
+const SERVERCHAN_TARGETS = {
+  A: process.env.SERVERCHAN_PERSON_A_TARGET || "pig",
+  B: process.env.SERVERCHAN_PERSON_B_TARGET || "cat"
+};
 
 const app = express();
 if (config.trustProxy) app.set("trust proxy", 1);
+
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader("Content-Security-Policy", [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self'",
+    "img-src 'self' data: https:",
+    "media-src 'self' http: https: blob:",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "frame-ancestors 'self'"
+  ].join("; "));
+  next();
+});
 
 app.use(express.json({ limit: "30mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -50,7 +81,13 @@ function parseCookies(cookieHeader = "") {
     if (index === -1) return acc;
     const key = chunk.slice(0, index).trim();
     const value = chunk.slice(index + 1).trim();
-    if (key) acc[key] = decodeURIComponent(value);
+    if (key) {
+      try {
+        acc[key] = decodeURIComponent(value);
+      } catch (_error) {
+        acc[key] = value;
+      }
+    }
     return acc;
   }, {});
 }
@@ -86,7 +123,8 @@ function getAccessFromRequest(req) {
   const bearerToken = authorization.toLowerCase().startsWith("bearer ")
     ? authorization.slice(7).trim()
     : "";
-  return verifyAccessToken(headerToken || bearerToken);
+  const cookieToken = parseCookies(req.get("cookie") || "").love_room_access || "";
+  return verifyAccessToken(headerToken || bearerToken || cookieToken);
 }
 
 function setAccessCookie(res, person) {
@@ -94,16 +132,17 @@ function setAccessCookie(res, person) {
   res.cookie("love_room_access", token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: false,
+    secure: config.cookieSecure,
     maxAge: 1000 * 60 * 60 * 24 * 30,
     path: "/"
   });
+  return token;
 }
 
 function clearAccessCookie(res) {
   res.clearCookie("love_room_access", {
     sameSite: "lax",
-    secure: false,
+    secure: config.cookieSecure,
     path: "/"
   });
 }
@@ -300,6 +339,14 @@ function listQuestions() {
   }));
 }
 
+function listQuestionTexts() {
+  return db.prepare(`
+    SELECT text
+    FROM daily_questions
+    ORDER BY id ASC
+  `).all().map((row) => row.text);
+}
+
 function normalizeMovieRow(row) {
   const updatedAt = row.updated_at || nowIso();
   let position = Number(row.position || 0);
@@ -448,6 +495,58 @@ const drawGuessGame = {
 
 function otherPerson(person) {
   return asPerson(person) === "A" ? "B" : "A";
+}
+
+function labelForServerChanPerson(person) {
+  const room = getRoomConfig();
+  return asPerson(person) === "B" ? room.personBName : room.personAName;
+}
+
+function serverChanTargetForPerson(person) {
+  return SERVERCHAN_TARGETS[asPerson(person)];
+}
+
+function notifyDailyAnswer(person, questionDate, questionText) {
+  if (!fs.existsSync(SERVERCHAN_PUSH_BIN)) return;
+
+  const senderLabel = labelForServerChanPerson(person);
+  const recipientPerson = otherPerson(person);
+  const recipientLabel = labelForServerChanPerson(recipientPerson);
+  const recipientTarget = serverChanTargetForPerson(recipientPerson);
+  const title = `${senderLabel}今天回答问题啦`;
+  const body = [
+    `日期：${questionDate}`,
+    "",
+    `今天的问题：${questionText}`,
+    "",
+    `${senderLabel}已经答完啦，就等${recipientLabel}来回答。`
+  ].join("\n");
+
+  execFile(
+    SERVERCHAN_PUSH_BIN,
+    [title, body],
+    {
+      env: {
+        ...process.env,
+        SERVERCHAN_TO: recipientTarget
+      },
+      timeout: 20000
+    },
+    (error, stdout, stderr) => {
+      if (error) {
+        console.error("ServerChan daily answer push failed", {
+          recipient: recipientLabel,
+          target: recipientTarget,
+          code: error.code,
+          signal: error.signal,
+          message: error.message
+        });
+        if (stderr) console.error(stderr.trim());
+        return;
+      }
+      if (stdout) console.log(stdout.trim());
+    }
+  );
 }
 
 function normalizeGuess(value) {
@@ -738,12 +837,6 @@ function emitAnniversaries() {
   io.to(ROOM).emit("anniversaries:updated", buildAnniversaryPayload());
 }
 
-function safeUploadName(originalName) {
-  const ext = path.extname(originalName || "").toLowerCase();
-  return `${Date.now()}-${crypto.randomBytes(8).toString("hex")}${ext}`;
-}
-
-const allowedVideoExts = new Set([".mp4", ".webm", ".ogg", ".ogv", ".m4v", ".mov", ".m3u8"]);
 const uploadVideo = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, VIDEOS_DIR),
@@ -753,11 +846,10 @@ const uploadVideo = multer({
     fileSize: config.maxVideoMb * 1024 * 1024
   },
   fileFilter: (_req, file, cb) => {
-    const ext = path.extname(file.originalname || "").toLowerCase();
-    if (allowedVideoExts.has(ext) || (file.mimetype || "").startsWith("video/")) {
+    if (isAllowedVideoUpload(file)) {
       return cb(null, true);
     }
-    return cb(new Error("Only mp4, webm, ogg, m4v, mov, or m3u8 video files are allowed."));
+    return cb(new Error(VIDEO_UPLOAD_ERROR));
   }
 });
 
@@ -991,7 +1083,10 @@ async function fetchOpenMeteoWeather(place, lat, lon, fallbackWeatherCode = null
 
 app.use("/uploads", express.static(UPLOADS_DIR, {
   maxAge: "1d",
-  fallthrough: false
+  fallthrough: false,
+  setHeaders: (res) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+  }
 }));
 app.use(express.static(PUBLIC_DIR, {
   extensions: ["html"],
@@ -1050,10 +1145,10 @@ app.post("/api/setup", requireRoomPath, (req, res) => {
   updateRoomConfig({
     personAName,
     personAEmoji,
-    personAPasscode,
+    personAPasscode: hashPasscode(personAPasscode),
     personBName,
     personBEmoji,
-    personBPasscode,
+    personBPasscode: hashPasscode(personBPasscode),
     setupComplete: "1"
   });
   const settings = updateSettings({
@@ -1075,10 +1170,11 @@ app.post("/api/setup", requireRoomPath, (req, res) => {
 
   io.to(ROOM).emit("settings:updated", settings);
   emitAnniversaries();
+  const accessToken = setAccessCookie(res, "A");
   res.json({
     ok: true,
     person: "A",
-    accessToken: makeAccessToken("A"),
+    accessToken,
     publicConfig: buildPublicConfigPayload(),
     settings
   });
@@ -1101,13 +1197,14 @@ app.post("/api/unlock", requireRoomPath, (req, res) => {
   }
   const room = getRoomConfig();
   const expected = person === "B" ? room.personBPasscode : room.personAPasscode;
-  if (passcode !== expected) {
+  if (!verifyPasscode(passcode, expected)) {
     registerUnlockFailure(attemptKey);
     return res.status(401).json({ error: "密码不对。" });
   }
   unlockAttempts.delete(attemptKey);
   clearAccessCookie(res);
-  res.json({ ok: true, person, accessToken: makeAccessToken(person) });
+  const accessToken = setAccessCookie(res, person);
+  res.json({ ok: true, person, accessToken });
 });
 
 app.post("/api/lock", requireRoomPath, (_req, res) => {
@@ -1353,11 +1450,16 @@ app.post("/api/daily/answer", (req, res) => {
 
   const payload = dailyPayload(person, questionDate);
   emitDailyToAll(questionDate);
+  notifyDailyAnswer(person, questionDate, assignment.text);
   res.json(payload);
 });
 
 app.get("/api/questions", (_req, res) => {
   res.json(listQuestions());
+});
+
+app.get("/api/questions/texts", (_req, res) => {
+  res.json(listQuestionTexts());
 });
 
 app.post("/api/questions", (req, res) => {
@@ -1503,7 +1605,8 @@ io.use((socket, next) => {
   if (roomPath !== config.roomPath && roomPath !== config.roomPath.slice(1)) {
     return next(new Error("Invalid room."));
   }
-  const token = socket.handshake.auth?.accessToken || "";
+  const cookieToken = parseCookies(socket.handshake.headers?.cookie || "").love_room_access || "";
+  const token = socket.handshake.auth?.accessToken || cookieToken;
   const access = verifyAccessToken(token);
   if (!access) {
     return next(new Error("Room is locked."));

@@ -50,6 +50,9 @@ const config = {
   catPasscode: process.env.PERSON_B_PASSCODE || process.env.CAT_PASSCODE || "change-me-b",
   roomSecret: process.env.ROOM_SECRET || crypto.randomBytes(32).toString("hex"),
   trustProxy: process.env.TRUST_PROXY === "1",
+  cookieSecure: process.env.COOKIE_SECURE
+    ? process.env.COOKIE_SECURE === "1"
+    : process.env.NODE_ENV === "production",
   vttUrl: process.env.VTT_URL || "",
   posioUrl: process.env.POSIO_URL || ""
 };

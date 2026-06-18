@@ -12,6 +12,10 @@
 
 ![Love Room 预览](docs/assets/readme-hero.svg)
 
+<p align="center">
+  <strong>私密路径</strong> · <strong>双入口口令</strong> · <strong>本地 SQLite</strong> · <strong>Docker 就绪</strong>
+</p>
+
 ## 它是什么
 
 Love Room 不是社交平台，也不是账号系统。它只有一个私密访问路径和两个房间口令。你把它部署在自己的服务器上，数据保存在自己的 SQLite 和本地上传目录里。
@@ -49,7 +53,7 @@ Love Room 不是社交平台，也不是账号系统。它只有一个私密访�
 
 ## 快速开始
 
-推荐 Node.js 20 LTS。
+推荐 Node.js 20、22 或 24 LTS；当前不建议使用 Node 25。
 
 macOS / Linux:
 
@@ -129,6 +133,7 @@ Docker Compose 会使用 volume 保存：
 | `VTT_URL` | 否 | 空 | 更多页里的 VirtualTabletop 链接 |
 | `POSIO_URL` | 否 | 空 | 更多页里的 Posio 链接 |
 | `TRUST_PROXY` | 反代时 | `0` | Nginx / 反代后建议设为 `1` |
+| `COOKIE_SECURE` | HTTPS 时 | 自动 | 生产环境默认启用 Secure cookie；只有纯本地 HTTP 才建议设为 `0` |
 
 生成 `ROOM_SECRET`：
 
@@ -232,6 +237,8 @@ HTTPS 可以用 Certbot 或你喜欢的证书方案。
 APP_DIR=/opt/love-room BACKUP_ROOT=/opt/love-room-backups bash scripts/backup.sh
 ```
 
+备份脚本也会复制 `.env`，所以备份目录需要保持私密。如果系统安装了 `sqlite3`，脚本会使用 SQLite 在线备份；否则会同时复制 `app.sqlite` 以及可能存在的 WAL/SHM 文件，并把它们保存在同一个快照里。
+
 ## 常见问题
 
 **生产启动时报 `Set ROOM_SECRET before running in production.`**
@@ -254,7 +261,9 @@ APP_DIR=/opt/love-room BACKUP_ROOT=/opt/love-room-backups bash scripts/backup.sh
 - 不要提交 `.env`、SQLite 数据库、上传文件、备份、私钥、真实 Nginx 配置。
 - 公网部署前请修改 `ROOM_PATH`。
 - 首次 setup 完成前，只要知道房间路径的人都可能初始化房间；请先完成 setup 再分享地址。
-- `/uploads` 下文件会被静态访问，不要上传真正敏感的内容。
+- 口令在 setup 或旧数据迁移后会以 scrypt 哈希保存。
+- 浏览器会话使用签名的 HTTP-only cookie，同时为 WebSocket 鉴权保留同一个短期 access token。
+- `/uploads` 下文件会被静态访问。上传会校验 MIME 和扩展名，但这里不是敏感文件存储。
 - 这是私密路径 + 口令方案，不是完整账号系统。
 
 ## 开源发布检查
