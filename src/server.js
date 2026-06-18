@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const https = require("node:https");
 const http = require("node:http");
 const path = require("node:path");
+const { execFile } = require("node:child_process");
 const express = require("express");
 const multer = require("multer");
 const { Server } = require("socket.io");
@@ -31,6 +32,11 @@ const PUBLIC_DIR = path.join(config.rootDir, "public");
 const UPLOADS_DIR = path.join(config.rootDir, "uploads");
 const VIDEOS_DIR = path.join(UPLOADS_DIR, "videos");
 const DRAWINGS_DIR = path.join(UPLOADS_DIR, "drawings");
+const SERVERCHAN_PUSH_BIN = process.env.SERVERCHAN_PUSH_BIN || "/usr/local/bin/serverchan-push";
+const SERVERCHAN_TARGETS = {
+  A: process.env.SERVERCHAN_PERSON_A_TARGET || "pig",
+  B: process.env.SERVERCHAN_PERSON_B_TARGET || "cat"
+};
 
 const app = express();
 if (config.trustProxy) app.set("trust proxy", 1);
@@ -333,6 +339,14 @@ function listQuestions() {
   }));
 }
 
+function listQuestionTexts() {
+  return db.prepare(`
+    SELECT text
+    FROM daily_questions
+    ORDER BY id ASC
+  `).all().map((row) => row.text);
+}
+
 function normalizeMovieRow(row) {
   const updatedAt = row.updated_at || nowIso();
   let position = Number(row.position || 0);
@@ -481,6 +495,58 @@ const drawGuessGame = {
 
 function otherPerson(person) {
   return asPerson(person) === "A" ? "B" : "A";
+}
+
+function labelForServerChanPerson(person) {
+  const room = getRoomConfig();
+  return asPerson(person) === "B" ? room.personBName : room.personAName;
+}
+
+function serverChanTargetForPerson(person) {
+  return SERVERCHAN_TARGETS[asPerson(person)];
+}
+
+function notifyDailyAnswer(person, questionDate, questionText) {
+  if (!fs.existsSync(SERVERCHAN_PUSH_BIN)) return;
+
+  const senderLabel = labelForServerChanPerson(person);
+  const recipientPerson = otherPerson(person);
+  const recipientLabel = labelForServerChanPerson(recipientPerson);
+  const recipientTarget = serverChanTargetForPerson(recipientPerson);
+  const title = `${senderLabel}今天回答问题啦`;
+  const body = [
+    `日期：${questionDate}`,
+    "",
+    `今天的问题：${questionText}`,
+    "",
+    `${senderLabel}已经答完啦，就等${recipientLabel}来回答。`
+  ].join("\n");
+
+  execFile(
+    SERVERCHAN_PUSH_BIN,
+    [title, body],
+    {
+      env: {
+        ...process.env,
+        SERVERCHAN_TO: recipientTarget
+      },
+      timeout: 20000
+    },
+    (error, stdout, stderr) => {
+      if (error) {
+        console.error("ServerChan daily answer push failed", {
+          recipient: recipientLabel,
+          target: recipientTarget,
+          code: error.code,
+          signal: error.signal,
+          message: error.message
+        });
+        if (stderr) console.error(stderr.trim());
+        return;
+      }
+      if (stdout) console.log(stdout.trim());
+    }
+  );
 }
 
 function normalizeGuess(value) {
@@ -1384,11 +1450,16 @@ app.post("/api/daily/answer", (req, res) => {
 
   const payload = dailyPayload(person, questionDate);
   emitDailyToAll(questionDate);
+  notifyDailyAnswer(person, questionDate, assignment.text);
   res.json(payload);
 });
 
 app.get("/api/questions", (_req, res) => {
   res.json(listQuestions());
+});
+
+app.get("/api/questions/texts", (_req, res) => {
+  res.json(listQuestionTexts());
 });
 
 app.post("/api/questions", (req, res) => {

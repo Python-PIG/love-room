@@ -13,6 +13,7 @@
     daily: null,
     dailyHistory: [],
     questions: [],
+    questionTexts: [],
     movieState: null,
     movieMessages: [],
     presence: { A: 0, B: 0, drawing: { A: false, B: false } },
@@ -235,6 +236,97 @@
       "今天有没有一点点委屈想被我接住？",
       "我们下次一起做哪件小事会让你开心？",
       "今天最适合被亲亲的理由是什么？"
+    ],
+    [
+      "今天有什么话想被认真听完？",
+      "如果今天能收到我一张照片，你想看什么？",
+      "今天最想把哪一分钟存进我们的相册？",
+      "如果现在能抱一下，你想抱多久？",
+      "今天有没有什么小情绪想交给我保管？"
+    ],
+    [
+      "今天最想和我交换哪一个日常片段？",
+      "如果今晚我们能一起点外卖，你会选什么？",
+      "今天哪件事让你觉得自己很棒？",
+      "如果我能突然出现在你面前，你希望我带什么？",
+      "今天想给未来的我们留一句什么备注？"
+    ],
+    [
+      "今天有没有一件小事值得被庆祝？",
+      "如果今天有一首歌属于我们，会是哪种感觉？",
+      "今天最想让我夸你哪一点？",
+      "如果我们有一个十分钟电话，你第一句想说什么？",
+      "今天有没有一个画面想让我也看见？"
+    ],
+    [
+      "今天你最需要我用什么方式陪你？",
+      "如果把今天放进一个盒子，你会放进去什么？",
+      "今天有没有一个瞬间觉得距离没那么远？",
+      "下次见面想一起买什么小东西？",
+      "今天想让我记住你的哪一种表情？"
+    ],
+    [
+      "如果今晚能一起睡前聊天，你想聊到几点？",
+      "今天有没有一句话差点就发给我？",
+      "今天最想把哪件事讲得更细一点？",
+      "如果我给你写一张便签，你想上面写什么？",
+      "今天我们之间最甜的一个念头是什么？"
+    ],
+    [
+      "今天你希望我怎么哄你开心？",
+      "如果现在可以一起喝东西，你想喝什么？",
+      "今天有没有什么值得被亲亲奖励？",
+      "下次见面想一起走快一点还是慢一点？",
+      "今天最想和我确认的一件事是什么？"
+    ],
+    [
+      "如果今天能把思念量出来，它会是什么形状？",
+      "今天有没有一秒钟想把我叫到身边？",
+      "今天你想把哪件普通小事讲给我听？",
+      "如果今晚能一起看天空，你想看月亮还是星星？",
+      "今天最适合被我抱住的理由是什么？"
+    ],
+    [
+      "今天有没有一件事想让我站在你这边？",
+      "如果现在能一起出门，你想先去买什么？",
+      "今天最想把哪句话变成我们的暗号？",
+      "如果我今天能帮你分担一件事，会是什么？",
+      "今天有没有一个瞬间想听我喊你的名字？"
+    ],
+    [
+      "今天你最想被我记住的小习惯是什么？",
+      "如果今晚能一起吃夜宵，你想点甜的还是咸的？",
+      "今天有没有什么事情让你想被夸夸？",
+      "如果我给你发一段语音，你想听什么内容？",
+      "今天最想和我一起完成哪件小任务？"
+    ],
+    [
+      "今天有没有一处风景想拍给我看？",
+      "如果我们现在能一起坐车，你想靠窗还是靠我？",
+      "今天你最想让我理解你的哪一点？",
+      "如果今晚有一个属于我们的仪式，会是什么？",
+      "今天有没有什么小烦恼想被我揉一揉？"
+    ],
+    [
+      "今天最想把哪件事讲成一个小故事？",
+      "如果下次见面只能先做一件事，你会选什么？",
+      "今天有没有一个瞬间觉得自己很需要抱抱？",
+      "如果我现在能给你递一样东西，你希望是什么？",
+      "今天你想给我们的关系加一个什么小标签？"
+    ],
+    [
+      "今天有没有一句话想让我睡前再看一遍？",
+      "如果我们能一起做早餐，你想吃什么？",
+      "今天最想让我陪你复盘哪件事？",
+      "如果把今天的心情画成天气，会是什么天气？",
+      "今天有没有什么瞬间想被我认真偏爱？"
+    ],
+    [
+      "今天你想让我知道你哪一点点努力？",
+      "如果今晚能一起散步十分钟，你想聊什么？",
+      "今天有没有一个东西让你想起下次见面？",
+      "如果我能替你保留今天的一秒，会是哪一秒？",
+      "今天最想从我这里得到哪一种确定感？"
     ]
   ];
 
@@ -1280,9 +1372,12 @@
   }
 
   function pickGeneratedQuestions() {
-    const used = new Set(state.questions.map((question) => question.text));
+    const used = new Set([
+      ...state.questionTexts,
+      ...state.questions.map((question) => question.text)
+    ]);
     const flat = questionSeedGroups.flat().filter((question) => !used.has(question));
-    const source = flat.length >= 5 ? flat : questionSeedGroups.flat();
+    const source = flat;
     const picked = [];
     const offset = Math.floor(Math.random() * Math.max(1, source.length));
     for (let index = 0; index < source.length && picked.length < 5; index += 1) {
@@ -1315,7 +1410,12 @@
   }
 
   async function loadQuestions() {
-    state.questions = await api("/api/questions");
+    const [questions, questionTexts] = await Promise.all([
+      api("/api/questions"),
+      api("/api/questions/texts")
+    ]);
+    state.questions = questions;
+    state.questionTexts = questionTexts;
     renderQuestions();
   }
 
@@ -1991,10 +2091,20 @@
           .split(/\r?\n/)
           .map((text) => text.trim())
           .filter(Boolean);
+        const knownQuestions = new Set([
+          ...state.questionTexts,
+          ...state.questions.map((question) => question.text)
+        ]);
+        const newQuestions = questions.filter((question) => !knownQuestions.has(question));
+        if (!newQuestions.length) {
+          window.alert("这几题已经在历史问题库里啦，点「生成五题」换一组新的，或者自己写几句。");
+          return;
+        }
         state.questions = await api("/api/questions", {
           method: "POST",
-          body: { questions }
+          body: { questions: newQuestions }
         });
+        state.questionTexts = Array.from(new Set([...state.questionTexts, ...newQuestions]));
         els.questionText.value = "";
         renderQuestions();
       } catch (error) {
@@ -2003,7 +2113,12 @@
     });
 
     els.questionGenerate.addEventListener("click", () => {
-      els.questionText.value = pickGeneratedQuestions().join("\n");
+      const generated = pickGeneratedQuestions();
+      if (!generated.length) {
+        window.alert("内置新题已经用完啦，先自己写几句新的问题。");
+        return;
+      }
+      els.questionText.value = generated.join("\n");
       els.questionText.focus();
     });
 
